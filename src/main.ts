@@ -1,24 +1,93 @@
-import './style.css'
-import typescriptLogo from './typescript.svg'
-import viteLogo from '/vite.svg'
-import { setupCounter } from './counter.ts'
+import './style.css';
 
-document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
-  <div>
-    <a href="https://vite.dev" target="_blank">
-      <img src="${viteLogo}" class="logo" alt="Vite logo" />
-    </a>
-    <a href="https://www.typescriptlang.org/" target="_blank">
-      <img src="${typescriptLogo}" class="logo vanilla" alt="TypeScript logo" />
-    </a>
-    <h1>Vite + TypeScript</h1>
-    <div class="card">
-      <button id="counter" type="button"></button>
-    </div>
-    <p class="read-the-docs">
-      Click on the Vite and TypeScript logos to learn more
-    </p>
-  </div>
-`
+import { AmbientLight, DirectionalLight, LoadingManager, Mesh, MeshStandardMaterial, PerspectiveCamera, Scene, SphereGeometry, TextureLoader, Vector2, WebGLRenderer } from 'three';
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 
-setupCounter(document.querySelector<HTMLButtonElement>('#counter')!)
+// import mapColor from './textures/desert/road/asphalt_DIFF.jpg';
+// import disp from './textures/desert/road/asphalt_DISP.png';
+// import normal from './textures/desert/road/asphalt_NOR.exr';
+// import map from './textures/desert/road/asphalt_DIFF.jpg';
+
+const screenSizes = {
+  width: window.innerWidth,
+  height: window.innerHeight
+}
+
+const loadingManager = new LoadingManager();
+const texturesLoad = new TextureLoader(loadingManager);
+
+const light = new DirectionalLight(0xffffff, .75);
+light.position.set(5,5,10)
+
+const aLight = new AmbientLight(0xffffff, 0.25);
+
+const scene = new Scene();
+const camera = new PerspectiveCamera(75, screenSizes.width / screenSizes.height, 0.1, 6000);
+const renderer = new WebGLRenderer({
+  antialias: window.devicePixelRatio < 2,
+  logarithmicDepthBuffer: true
+});
+
+renderer.setSize(screenSizes.width, screenSizes.height)
+
+camera.position.z = 5
+
+// start road mesh
+const dispPath = import.meta.env.BASE_URL + "textures/desert/mountains/cliff_disp.png";
+const displacementMap = texturesLoad.load(dispPath);
+
+const normalPath = import.meta.env.BASE_URL + "textures/desert/mountains/cliff_nor.png";
+const normalMap = texturesLoad.load(normalPath);
+
+const mapPath = import.meta.env.BASE_URL + "textures/desert/mountains/cliff_color.jpg";
+const map = texturesLoad.load(mapPath);
+
+const mapAOPath = import.meta.env.BASE_URL + "textures/desert/mountains/cliff_occ.jpg";
+const aoMap = texturesLoad.load(mapAOPath);
+
+
+const sphereGeometry = new SphereGeometry(1, 100, 100);
+const sphereMaterial = new MeshStandardMaterial({
+  color: 0xf9a23b,
+  map,
+  displacementMap,
+  displacementScale: .3,
+  normalMap,
+  normalScale: new Vector2(1, -1),
+  aoMap,
+  aoMapIntensity: 1
+});
+const road = new Mesh(sphereGeometry, sphereMaterial);
+// end road mesh
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+
+scene.add(road, aLight, light);
+
+
+document.body.appendChild(renderer.domElement);
+handleResize();
+
+function animate() {
+  controls.update();
+  renderer.render(scene, camera);
+  requestAnimationFrame(animate);
+}
+
+requestAnimationFrame(animate);
+
+window.addEventListener('resize', handleResize);
+
+function handleResize() {
+  screenSizes.width = window.innerWidth;
+  screenSizes.height = window.innerHeight;
+
+  camera.aspect = screenSizes.width / screenSizes.height;
+  camera.updateProjectionMatrix();
+
+  renderer.setSize(screenSizes.width, screenSizes.height);
+
+  const pixelRatio = Math.min(window.devicePixelRatio, 2);
+  renderer.setPixelRatio(pixelRatio);
+}
