@@ -1,11 +1,11 @@
-import { Group, Texture } from "three";
-import { DesertObjs } from "../../enums/desert.enum";
-import { Scenes, ScenesChildren } from "../../enums/scenes";
+import { Group } from "three";
+import { DesertObjs } from "@enums/desert.enum";
+import { Scenes, ScenesChildren } from "@enums/scenes";
 import { Ground } from "./sub/Ground.class";
 import { Mountains } from "./sub/Mountains.class";
 import { Road } from "./sub/Road.class";
-import { BaseScene } from "../BaseScene.class";
-import { TextureMaps, TexturePath } from "../../interfaces/img-texture.interface";
+import { BaseScene } from "@scenes/BaseScene.class";
+import { TextureMaps, TexturePath } from "@interfaces/img-texture.interface";
 
 export class Desert extends BaseScene {
   private localeScene: keyof typeof ScenesChildren = Scenes.Desert;
@@ -75,7 +75,7 @@ export class Desert extends BaseScene {
     const displacementMapPath = this.getImgTexture({
       ...imgRoadParams, map: '/asphalt_displacement.png'
     });
-    
+
     return {
       map: this.texturesLoader.load(colorMapPath),
       displacementMap: this.texturesLoader.load(displacementMapPath)

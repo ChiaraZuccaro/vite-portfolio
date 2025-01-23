@@ -1,5 +1,5 @@
 import { Group, Mesh, MeshStandardMaterial, SphereGeometry } from "three";
-import { TextureMaps } from "../../../interfaces/img-texture.interface";
+import { TextureMaps } from "@interfaces/img-texture.interface";
 
 export class Road {
   private roadGroup = new Group();

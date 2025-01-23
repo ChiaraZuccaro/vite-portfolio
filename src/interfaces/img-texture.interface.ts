@@ -1,5 +1,5 @@
 import { Texture } from "three";
-import { ScenesChildren , Scenes } from "../enums/scenes";
+import { ScenesChildren , Scenes } from "@enums/scenes";
 
 export interface TexturePath {
   scene: Scenes,

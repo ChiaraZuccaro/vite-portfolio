@@ -11,7 +11,12 @@
     "isolatedModules": true,
     "moduleDetection": "force",
     "noEmit": true,
-
+    "baseUrl": "./",
+    "paths": {
+      "@interfaces/*": ["src/interfaces/*"],
+      "@enums/*": ["src/enums/*"],
+      "@scenes/*": ["src/scenes/*"]
+    },
     /* Linting */
     "strict": true,
     "noUnusedLocals": false,
