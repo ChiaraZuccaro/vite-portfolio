@@ -5,6 +5,7 @@ import { Ground } from "./sub/Ground.class";
 import { Mountains } from "./sub/Mountains.class";
 import { Road } from "./sub/Road.class";
 import { BaseScene } from "../BaseScene.class";
+import { TextureMaps } from "../../interfaces/img-texture.interface";
 
 export class Desert extends BaseScene {
   private localeScene: keyof typeof ScenesChildren = Scenes.Desert;
@@ -18,52 +19,66 @@ export class Desert extends BaseScene {
 
   constructor() {
     super();
-    const aoMap = this.getImgTexture({
+    
+    this.mountains = this.createMountains();
+    
+    this.desertGroup.add(this.mountains)
+  }
+
+  //#region Mountains
+  private mountainsParamsTexture(): TextureMaps {
+    const aoMapPath = this.getImgTexture({
       scene: this.localeScene,
       obj: this.localeObjs.Mountains,
       map: '/cliff_ao.jpg'
     });
-    const colorMap = this.getImgTexture({
+    const colorMapPath = this.getImgTexture({
       scene: this.localeScene,
       obj: this.localeObjs.Mountains,
       map: '/cliff_color.jpg'
     });
-    const displacementMap = this.getImgTexture({
+    const displacementMapPath = this.getImgTexture({
       scene: this.localeScene,
       obj: this.localeObjs.Mountains,
       map: '/cliff_displacement.png'
     });
-    const normalMap = this.getImgTexture({
+    const normalMapPath = this.getImgTexture({
       scene: this.localeScene,
       obj: this.localeObjs.Mountains,
       map: '/cliff_normal.jpg'
     });
-    const roughnessMap = this.getImgTexture({
+    const roughnessMapPath = this.getImgTexture({
       scene: this.localeScene,
       obj: this.localeObjs.Mountains,
       map: '/cliff_roughness.jpg'
     });
-    const armMap = this.getImgTexture({
-      scene: this.localeScene,
-      obj: this.localeObjs.Mountains,
-      map: '/cliff_arm.jpg'
-    });
 
-    const mountainsTextureParams = {
-      armMap: this.texturesLoader.load(armMap),
-      aoMap: this.texturesLoader.load(aoMap),
-      colorMap: this.texturesLoader.load(colorMap),
-      displacementMap: this.texturesLoader.load(displacementMap),
-      normalMap: this.texturesLoader.load(normalMap),
-      roughnessMap: this.texturesLoader.load(roughnessMap)
+    return {
+      aoMap: this.texturesLoader.load(aoMapPath),
+      colorMap: this.texturesLoader.load(colorMapPath),
+      displacementMap: this.texturesLoader.load(displacementMapPath),
+      normalMap: this.texturesLoader.load(normalMapPath),
+      roughnessMap: this.texturesLoader.load(roughnessMapPath)
     }
-    console.log(this.textures);
-    this.textures.push(aoMap, roughnessMap, )
-    
-    this.mountains = new Mountains(mountainsTextureParams).get();
-    
-    this.desertGroup.add(this.mountains)
   }
+
+  private createMountains() {
+    const mountainsTextureParams = this.mountainsParamsTexture();
+    return new Mountains(mountainsTextureParams).get();
+  }
+  //#endregion
+
+  //#region Road
+  private roadParamsTexture() {
+
+  }
+  //#endregion
+
+  //#region Ground
+  private groundParamsTexture() {
+    
+  }
+  //#endregion
 
   public init() {
     // this.loadAllTextures();

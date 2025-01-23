@@ -12,10 +12,11 @@ export class Mountains {
   }
 
   private init() {
-    const sphereGeometry = new SphereGeometry(3, 100, 100);
+    const sphereGeometry = new SphereGeometry(2, 100, 100);
     const material = new MeshStandardMaterial({
-      // map: this.texturesMap.colorMap,
+      map: this.texturesMap.colorMap,
       aoMap: this.texturesMap.aoMap,
+      aoMapIntensity: 1,
       normalMap: this.texturesMap.normalMap,
       displacementMap: this.texturesMap.displacementMap,
       displacementScale: .3,

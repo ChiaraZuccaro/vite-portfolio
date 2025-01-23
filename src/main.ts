@@ -1,6 +1,8 @@
-import { AmbientLight, DirectionalLight, LoadingManager, Mesh, MeshStandardMaterial, PerspectiveCamera, Scene, SphereGeometry, TextureLoader, Vector2, WebGLRenderer } from 'three';
+import { AmbientLight, DirectionalLight, LoadingManager, PerspectiveCamera, Scene, TextureLoader, WebGLRenderer } from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { Desert } from './scenes/desert/Desert.class';
+
+import './style.css';
 
 // import mapColor from './textures/desert/road/asphalt_DIFF.jpg';
 // import disp from './textures/desert/road/asphalt_DISP.png';
@@ -15,10 +17,10 @@ const screenSizes = {
 const loadingManager = new LoadingManager();
 const texturesLoad = new TextureLoader(loadingManager);
 
-const light = new DirectionalLight(0xffffff, .75);
+const light = new DirectionalLight(0xffffff, 1.5);
 light.position.set(5,5,10)
 
-const aLight = new AmbientLight(0xffffff, 0.25);
+const aLight = new AmbientLight(0xffffff, 0.5);
 
 const scene = new Scene();
 const camera = new PerspectiveCamera(75, screenSizes.width / screenSizes.height, 0.1, 6000);

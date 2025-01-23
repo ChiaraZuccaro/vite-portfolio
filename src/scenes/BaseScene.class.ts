@@ -26,7 +26,7 @@ export class BaseScene {
 
   public loadingProgress() {
     this.loadingManager.onProgress = (url, itemsLoaded, total) => {
-      console.log(url + ' è stato caricato correttamente ')
+      console.log('Caricate al', Math.ceil((itemsLoaded / total) * 100), '%')
     }
   }
 }
