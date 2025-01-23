@@ -1,6 +1,6 @@
 import { Group } from "three";
 import { DesertObjs } from "@enums/desert.enum";
-import { Scenes, ScenesChildren } from "@enums/scenes";
+import { Scenes } from "@enums/scenes";
 import { Ground } from "./sub/Ground.class";
 import { Mountains } from "./sub/Mountains.class";
 import { Road } from "./sub/Road.class";
@@ -8,11 +8,10 @@ import { BaseScene } from "@scenes/BaseScene.class";
 import { TextureMaps, TexturePath } from "@interfaces/img-texture.interface";
 
 export class Desert extends BaseScene {
-  private localeScene: keyof typeof ScenesChildren = Scenes.Desert;
-  private localeObjs = ScenesChildren[this.localeScene] as typeof DesertObjs;
+  private localeScene = Scenes.Desert;
 
   private road: Group;
-  private ground = new Ground();
+  private ground: Group;
   private mountains: Group;
 
   private desertGroup = new Group();
@@ -22,17 +21,19 @@ export class Desert extends BaseScene {
     
     this.mountains = this.createMountains();
     this.road = this.createRoad();
+    this.ground = this.createGround();
     
-    this.desertGroup.add(this.mountains, this.road)
+    this.desertGroup.add(this.mountains, this.road, this.ground)
   }
+
+  private defaultImgParams(obj: DesertObjs): TexturePath {
+    return { scene: this.localeScene, obj, map: '' }
+  }
+
 
   //#region Mountains
   private mountainsParamsTexture(): TextureMaps {
-    const imgMountainParams: TexturePath = {
-      scene: this.localeScene,
-      obj: this.localeObjs.Mountains,
-      map: ''
-    };
+    const imgMountainParams = this.defaultImgParams(DesertObjs.Mountains);
 
     const aoMapPath = this.getImgTexture({
       ...imgMountainParams, map: '/cliff_ao.jpg'
@@ -63,11 +64,7 @@ export class Desert extends BaseScene {
 
   //#region Road
   private roadParamsTexture(): TextureMaps {
-    const imgRoadParams: TexturePath = {
-      scene: this.localeScene,
-      obj: this.localeObjs.Road,
-      map: ''
-    };
+    const imgRoadParams = this.defaultImgParams(DesertObjs.Road);
 
     const colorMapPath = this.getImgTexture({
       ...imgRoadParams, map: '/asphalt_color.jpg'
@@ -89,8 +86,33 @@ export class Desert extends BaseScene {
   //#endregion
 
   //#region Ground
-  private groundParamsTexture() {
-    
+  private groundParamsTexture(): TextureMaps {
+    const imgGroundParams = this.defaultImgParams(DesertObjs.Ground);
+
+    const colorMapPath = this.getImgTexture({
+      ...imgGroundParams, map: '/sand_color.jpg'
+    });
+    const displacementMapPath = this.getImgTexture({
+      ...imgGroundParams, map: '/sand_displacement.png'
+    });
+    const aoMapPath = this.getImgTexture({
+      ...imgGroundParams, map: '/sand_ao.jpg'
+    });
+    const normalMapPath = this.getImgTexture({
+      ...imgGroundParams, map: '/sand_normal.jpg'
+    });
+
+    return {
+      map: this.texturesLoader.load(colorMapPath),
+      displacementMap: this.texturesLoader.load(displacementMapPath),
+      aoMap: this.texturesLoader.load(aoMapPath),
+      normalMap: this.texturesLoader.load(normalMapPath)
+    }
+  }
+  
+  private createGround() {
+    const groundTextureParams = this.groundParamsTexture();
+    return new Ground(groundTextureParams).get();
   }
   //#endregion
 
