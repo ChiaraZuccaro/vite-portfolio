@@ -31,7 +31,8 @@ const renderer = new WebGLRenderer({
 
 renderer.setSize(screenSizes.width, screenSizes.height)
 
-camera.position.z = 5
+camera.position.z = 7
+camera.position.x = -2
 
 const desert = new Desert().getScene();
 
