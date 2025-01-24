@@ -1,4 +1,4 @@
-import { Group } from "three";
+import { Group, Vector3 } from "three";
 import { DesertObjs } from "@enums/desert.enum";
 import { Scenes } from "@enums/scenes";
 import { Ground } from "./sub/Ground.class";
@@ -6,6 +6,7 @@ import { Mountains } from "./sub/Mountains.class";
 import { Road } from "./sub/Road.class";
 import { BaseScene } from "@scenes/BaseScene.class";
 import { TextureMaps, TexturePath } from "@interfaces/img-texture.interface";
+import { createNoise2D } from "simplex-noise";
 
 export class Desert extends BaseScene {
   private localeScene = Scenes.Desert;
@@ -18,7 +19,7 @@ export class Desert extends BaseScene {
     const road = this.createRoad();
     const ground = this.createGround();
     
-    this.desertGroup.add(mountains, road, ground)
+    this.desertGroup.add(ground)
   }
 
   private defaultImgParams(obj: DesertObjs): TexturePath {

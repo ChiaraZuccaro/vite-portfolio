@@ -1,4 +1,4 @@
-import { AmbientLight, DirectionalLight, PerspectiveCamera, Scene, WebGLRenderer } from 'three';
+import { AmbientLight, AxesHelper, DirectionalLight, PerspectiveCamera, Scene, WebGLRenderer } from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { Desert } from './scenes/desert/Desert.class';
 
@@ -23,15 +23,17 @@ const renderer = new WebGLRenderer({
 
 renderer.setSize(screenSizes.width, screenSizes.height)
 
-camera.position.z = 7
-camera.position.x = -2
+camera.position.z = 70
+camera.position.y = 60
 
 const desert = new Desert().getScene();
 
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 
-scene.add(desert,aLight, light);
+const axes = new AxesHelper(3);
+
+scene.add(desert,aLight, light, axes);
 
 
 document.body.appendChild(renderer.domElement);
