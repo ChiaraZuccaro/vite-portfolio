@@ -9,6 +9,7 @@ export interface TexturePath {
 
 export interface TextureMaps {
   map: Texture,
+  color?: string,
   aoMap?: Texture,
   displacementMap?: Texture,
   normalMap?: Texture,

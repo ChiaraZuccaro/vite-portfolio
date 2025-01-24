@@ -9,21 +9,16 @@ import { TextureMaps, TexturePath } from "@interfaces/img-texture.interface";
 
 export class Desert extends BaseScene {
   private localeScene = Scenes.Desert;
-
-  private road: Group;
-  private ground: Group;
-  private mountains: Group;
-
   private desertGroup = new Group();
 
   constructor() {
     super();
     
-    this.mountains = this.createMountains();
-    this.road = this.createRoad();
-    this.ground = this.createGround();
+    const mountains = this.createMountains();
+    const road = this.createRoad();
+    const ground = this.createGround();
     
-    this.desertGroup.add(this.mountains, this.road, this.ground)
+    this.desertGroup.add(mountains, road, ground)
   }
 
   private defaultImgParams(obj: DesertObjs): TexturePath {
@@ -49,6 +44,7 @@ export class Desert extends BaseScene {
     });
 
     return {
+      color: '#F69850',
       aoMap: this.texturesLoader.load(aoMapPath),
       map: this.texturesLoader.load(colorMapPath),
       displacementMap: this.texturesLoader.load(displacementMapPath),
@@ -74,6 +70,7 @@ export class Desert extends BaseScene {
     });
 
     return {
+      color: '#333333',
       map: this.texturesLoader.load(colorMapPath),
       displacementMap: this.texturesLoader.load(displacementMapPath)
     }
@@ -103,6 +100,7 @@ export class Desert extends BaseScene {
     });
 
     return {
+      color: '#EFBE87',
       map: this.texturesLoader.load(colorMapPath),
       displacementMap: this.texturesLoader.load(displacementMapPath),
       aoMap: this.texturesLoader.load(aoMapPath),
