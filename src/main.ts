@@ -23,17 +23,18 @@ const renderer = new WebGLRenderer({
 
 renderer.setSize(screenSizes.width, screenSizes.height)
 
-camera.position.z = 70
-camera.position.y = 60
+camera.position.z = 250
+camera.position.y = 120
 
-const desert = new Desert().getScene();
+const desert = new Desert(camera);
+const desertScene = desert.getScene();
 
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 
 const axes = new AxesHelper(3);
 
-scene.add(desert,aLight, light, axes);
+scene.add(desertScene,aLight, light, axes);
 
 
 document.body.appendChild(renderer.domElement);
@@ -41,6 +42,7 @@ handleResize();
 
 function animate() {
   controls.update();
+  // desert.updateScene();
   renderer.render(scene, camera);
   requestAnimationFrame(animate);
 }

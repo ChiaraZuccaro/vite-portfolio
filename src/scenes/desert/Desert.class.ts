@@ -1,4 +1,4 @@
-import { Group, Vector3 } from "three";
+import { Group, PerspectiveCamera } from "three";
 import { DesertObjs } from "@enums/desert.enum";
 import { Scenes } from "@enums/scenes";
 import { Ground } from "./sub/Ground.class";
@@ -11,15 +11,21 @@ import { createNoise2D } from "simplex-noise";
 export class Desert extends BaseScene {
   private localeScene = Scenes.Desert;
   private desertGroup = new Group();
+  
+  private ground: Ground;
 
-  constructor() {
+  private camera: PerspectiveCamera;
+
+  constructor(camera: PerspectiveCamera) {
     super();
+
+    this.camera = camera;
     
     const mountains = this.createMountains();
     const road = this.createRoad();
-    const ground = this.createGround();
+    this.ground = this.createGround();
     
-    this.desertGroup.add(ground)
+    this.desertGroup.add(this.ground.get())
   }
 
   private defaultImgParams(obj: DesertObjs): TexturePath {
@@ -111,7 +117,7 @@ export class Desert extends BaseScene {
   
   private createGround() {
     const groundTextureParams = this.groundParamsTexture();
-    return new Ground(groundTextureParams).get();
+    return new Ground(this.camera, groundTextureParams);
   }
   //#endregion
 
@@ -121,5 +127,9 @@ export class Desert extends BaseScene {
 
   public getScene() {
     return this.desertGroup;
+  }
+
+  public updateScene() {
+    this.ground.trackCamera();
   }
 }
