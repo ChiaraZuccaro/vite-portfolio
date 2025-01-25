@@ -4,7 +4,7 @@ import { Group, PlaneGeometry, Mesh, MeshStandardMaterial, Vector3, PerspectiveC
 
 export class Ground {
   private groundGroup = new Group();
-  private chunkSize = 70;
+  private chunkSize = 120;
   private renderDistance = 2;
   private chunkMap = new Map();
   private currentChunk = { x: 0, z: 0 };
@@ -21,19 +21,36 @@ export class Ground {
     const position = geometry.attributes.position;
     const amplitude = 3;
     const frequency = 0.03;
-    // const roadWidth = 10;  // Larghezza della strada piatta
+    const roadRadius = 600; // 🔥 Raggio della strada
+    const roadWidth = 50; // 🔥 Larghezza della strada
+    const roadStartAngle = Math.PI / 4; // 🔥 Angolo iniziale della strada
+    const roadEndAngle = Math.PI / 2; // 🔥 Angolo finale della strada
 
     for (let i = 0; i < position.count; i++) {
-      let x = position.getX(i);
-      let z = position.getZ(i);
+      let x = position.getX(i) + chunkX;
+        let z = position.getZ(i) + chunkZ;
 
-      // 🔹 Convertiamo in coordinate globali per evitare discontinuità tra chunk
-      let globalX = x + chunkX;
-      let globalZ = z + chunkZ;
+        // 🔹 Calcoliamo la distanza dal centro
+        const distanceFromCenter = Math.sqrt(x * x + z * z);
 
-      // 🔹 Generiamo il noise usando solo coordinate globali
-      const noise = this.noise(globalX * frequency, globalZ * frequency) * amplitude;
-      position.setY(i, noise);
+        // 🔹 Calcoliamo l'angolo rispetto al centro (0,0)
+        const angle = Math.atan2(z, x);
+
+        // 🔥 Controlliamo se il vertice è nella zona della strada
+        const isInRoad = 
+            distanceFromCenter >= roadRadius - roadWidth / 2 && 
+            distanceFromCenter <= roadRadius + roadWidth / 2 
+            // angle >= roadStartAngle && 
+            // angle <= roadEndAngle;
+
+        if (isInRoad) {
+            // Manteniamo la strada piatta
+            position.setY(i, 0);
+        } else {
+            // Applichiamo il noise solo alla sabbia
+            const noise = this.noise(x * frequency, z * frequency) * amplitude;
+            position.setY(i, noise);
+        }
     }
 
     position.needsUpdate = true;
@@ -91,8 +108,6 @@ export class Ground {
   }
 
   public trackCamera = () => {
-    requestAnimationFrame(this.trackCamera);
-
     const cameraPosition = new Vector3();
     this.camera.getWorldPosition(cameraPosition);
 
