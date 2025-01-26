@@ -1,6 +1,6 @@
 import { TextureMaps } from "@interfaces/img-texture.interface";
 import { createNoise2D } from "simplex-noise";
-import { Group, PlaneGeometry, Mesh, MeshStandardMaterial, Vector3, PerspectiveCamera } from "three";
+import { Group, PlaneGeometry, Mesh, MeshStandardMaterial, Vector3, PerspectiveCamera, RepeatWrapping } from "three";
 
 export class Ground {
   private groundGroup = new Group();
@@ -12,51 +12,70 @@ export class Ground {
 
   private noise = createNoise2D();
 
+  private textures: TextureMaps;
+
   constructor(camera: PerspectiveCamera, allTextures: TextureMaps) {
     this.camera = camera;
+    this.textures = allTextures;
     this.generateChunks(this.currentChunk.x, this.currentChunk.z);
+  }
+
+  private setLookCameraOnStreet(cameraPosition: Vector3) {
+    const roadCenter = new Vector3(0, 0, 0);
+    const toCenter = cameraPosition.clone().sub(roadCenter); // vector camera → center
+    toCenter.setY(0);
+    toCenter.normalize().multiplyScalar(600);
+
+    const closestRoadPoint = roadCenter.clone().add(toCenter);
+    const cameraDirection = new Vector3();
+    this.camera.getWorldDirection(cameraDirection);
+    
+    // OFFSET to look to right
+    const rightVector = new Vector3(-cameraDirection.z, 0, cameraDirection.x).normalize();
+
+    const lookAtOffset = 1;
+    const lookAtTarget = closestRoadPoint.clone().add(rightVector.multiplyScalar(lookAtOffset));
+
+    const cameraOffset = 5;
+    const newCameraPosition = cameraPosition.clone().add(rightVector.multiplyScalar(cameraOffset));
+    this.camera.position.copy(newCameraPosition);
+
+    const currentLookAt = new Vector3();
+    this.camera.getWorldDirection(currentLookAt);
+    currentLookAt.add(cameraPosition);
+    
+    currentLookAt.lerp(lookAtTarget, 0.1);
+    this.camera.lookAt(currentLookAt);
   }
 
   private applySandWaves(geometry: PlaneGeometry, chunkX: number, chunkZ: number) {
     const position = geometry.attributes.position;
     const amplitude = 3;
     const frequency = 0.03;
-    const roadRadius = 600; // 🔥 Raggio della strada
-    const roadWidth = 50; // 🔥 Larghezza della strada
-    const roadStartAngle = Math.PI / 4; // 🔥 Angolo iniziale della strada
-    const roadEndAngle = Math.PI / 2; // 🔥 Angolo finale della strada
+    const roadRadius = 600;
+    const roadWidth = 55;
 
     for (let i = 0; i < position.count; i++) {
       let x = position.getX(i) + chunkX;
-        let z = position.getZ(i) + chunkZ;
+      let z = position.getZ(i) + chunkZ;
 
-        // 🔹 Calcoliamo la distanza dal centro
-        const distanceFromCenter = Math.sqrt(x * x + z * z);
+      const distanceFromCenter = Math.sqrt(x * x + z * z);
+      const isInRoad = distanceFromCenter >= roadRadius - roadWidth / 2 && 
+        distanceFromCenter <= roadRadius + roadWidth / 2;
 
-        // 🔹 Calcoliamo l'angolo rispetto al centro (0,0)
-        const angle = Math.atan2(z, x);
-
-        // 🔥 Controlliamo se il vertice è nella zona della strada
-        const isInRoad = 
-            distanceFromCenter >= roadRadius - roadWidth / 2 && 
-            distanceFromCenter <= roadRadius + roadWidth / 2 
-            // angle >= roadStartAngle && 
-            // angle <= roadEndAngle;
-
-        if (isInRoad) {
-            // Manteniamo la strada piatta
-            position.setY(i, 0);
-        } else {
-            // Applichiamo il noise solo alla sabbia
-            const noise = this.noise(x * frequency, z * frequency) * amplitude;
-            position.setY(i, noise);
-        }
+      if (isInRoad) {
+        position.setY(i, 0);
+      } else {
+        const noise = this.noise(x * frequency, z * frequency) * amplitude;
+        position.setY(i, noise);
+      }
     }
 
     position.needsUpdate = true;
     geometry.computeVertexNormals();
   }
 
+  //#region Chunks
   private generateChunks(centerX: number, centerZ: number) {
     const newChunkKeys = new Set();
 
@@ -81,14 +100,19 @@ export class Ground {
     }
   }
 
-  private createChunk(x: number, z: number) {
-    const geometry = new PlaneGeometry(this.chunkSize, this.chunkSize, 100, 100);
+  private createChunk(x: number, z: number, LOD = 1) {
+    const segments = Math.max(Math.floor(this.chunkSize * .5 **LOD), 1);
+    const geometry = new PlaneGeometry(this.chunkSize, this.chunkSize, segments, segments);
     geometry.rotateX(-Math.PI / 2);
     this.applySandWaves(geometry, x,z)
 
+    this.textures.map.wrapS = RepeatWrapping;
+    this.textures.map.wrapT = RepeatWrapping;
+    this.textures.map.repeat.set(1,1);
     const material = new MeshStandardMaterial({
-      color: 0x888888,
-      wireframe: true
+      ...this.textures,
+      displacementScale: .3,
+      roughness: 1
     });
 
     const mesh = new Mesh(geometry, material);
@@ -106,19 +130,22 @@ export class Ground {
       this.chunkMap.delete(key);
     }
   }
+  //#endregion
+
 
   public trackCamera = () => {
     const cameraPosition = new Vector3();
     this.camera.getWorldPosition(cameraPosition);
 
-    // Which chunk is the camera 
     const newChunkX = Math.floor(cameraPosition.x / this.chunkSize);
     const newChunkZ = Math.floor(cameraPosition.z / this.chunkSize);
 
     if (newChunkX !== this.currentChunk.x || newChunkZ !== this.currentChunk.z) {
-      this.currentChunk = { x: newChunkX, z: newChunkZ };
-      this.generateChunks(newChunkX, newChunkZ);
+        this.currentChunk = { x: newChunkX, z: newChunkZ };
+        this.generateChunks(newChunkX, newChunkZ); // 🔥 Rigenera i chunk se necessario
     }
+
+    this.setLookCameraOnStreet(cameraPosition);
   };
 
   public get() {

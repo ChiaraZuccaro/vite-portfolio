@@ -31,7 +31,7 @@ controls.enableDamping = true;
 
 const axes = new AxesHelper(3);
 
-scene.add(camera, desertScene,aLight, light, axes);
+scene.add(desertScene,aLight, light, axes );
 
 
 document.body.appendChild(renderer.domElement);
@@ -75,7 +75,7 @@ function animateCamera(time: number) {
   // 🔹 Posizione della camera (orbita più piccola della strada)
   const camX = (ringCenterRadius + cameraDistanceFromRing) * Math.cos(angle);
   const camZ = (ringCenterRadius + cameraDistanceFromRing) * Math.sin(angle);
-  const camY = 15; // 🔹 Altezza regolata per una visuale migliore
+  const camY = 6; // 🔹 Altezza regolata per una visuale migliore
 
   // 🔥 🔹 Punto da guardare → Avanti nella direzione inversa
   const lookX = (ringCenterRadius + cameraDistanceFromRing) * Math.cos(angle + lookAheadOffset);
