@@ -1,14 +1,21 @@
 import { Group, LoadingManager, TextureLoader } from "three";
 import { TexturePath } from "../interfaces/img-texture.interface";
+import { DRACOLoader, GLTFLoader } from "three/examples/jsm/Addons.js";
 
 export class BaseScene {
   private loadingManager = new LoadingManager();
+
   public texturesLoader = new TextureLoader(this.loadingManager);
+  public gltf = new GLTFLoader();
+  public dracoLoader = new DRACOLoader();
 
   public textures: string[] = [];
   public group = new Group();
 
   constructor() {
+    this.dracoLoader.setDecoderPath(import.meta.env.BASE_URL + 'draco/');
+    this.gltf.setDRACOLoader(this.dracoLoader);
+
     this.loadingProgress()
   }
 
@@ -16,13 +23,6 @@ export class BaseScene {
     return import.meta.env.BASE_URL + 'textures/' + params.scene + '/' + params.obj + params.map;
   }
 
-  // public loadAllTextures () {
-  //   for (let i = 0; i < this.textures.length; i++) {
-  //     const path = this.textures[i];
-  //     this.texturesLoader.load(path);
-  //   }
-  //   this.loadingProgress()
-  // }
 
   public loadingProgress() {
     this.loadingManager.onProgress = (url, itemsLoaded, total) => {

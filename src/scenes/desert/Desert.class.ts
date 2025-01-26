@@ -1,4 +1,4 @@
-import { Group, PerspectiveCamera } from "three";
+import { BoxHelper, Group, PerspectiveCamera } from "three";
 import { DesertObjs } from "@enums/desert.enum";
 import { Scenes } from "@enums/scenes";
 import { Ground } from "./sub/Ground.class";
@@ -7,25 +7,37 @@ import { Road } from "./sub/Road.class";
 import { BaseScene } from "@scenes/BaseScene.class";
 import { TextureMaps, TexturePath } from "@interfaces/img-texture.interface";
 import { createNoise2D } from "simplex-noise";
+import { GLTF } from "three/examples/jsm/Addons.js";
 
 export class Desert extends BaseScene {
   private localeScene = Scenes.Desert;
   private desertGroup = new Group();
   
   private ground: Ground;
+  private road: Road;
+  private cactus: GLTF;
 
   private camera: PerspectiveCamera;
-
+  
   constructor(camera: PerspectiveCamera) {
     super();
+    // const obj3DPath = import.meta.env.BASE_URL + 'obj3D/' + 'cactus.glb';
+    const obj3DPath = import.meta.env.BASE_URL + 'obj3D/' + 'realistic.glb';
+    const obj3DDracoPath = import.meta.env.BASE_URL + 'obj3D/' + 'cactus-v1.glb';
+    this.gltf.load(obj3DPath, (gltf) => {
+      gltf.scene.scale.set(10,10,10)
+      this.cactus = gltf;
+      this.desertGroup.add(this.cactus.scene)
+    });
+    
 
     this.camera = camera;
     
     const mountains = this.createMountains();
-    const road = this.createRoad();
+    this.road = this.createRoad();
     this.ground = this.createGround();
     
-    this.desertGroup.add(this.ground.get())
+    this.desertGroup.add(this.ground.get(), this.road.get())
   }
 
   private defaultImgParams(obj: DesertObjs): TexturePath {
@@ -85,7 +97,7 @@ export class Desert extends BaseScene {
 
   private createRoad() {
     const roadTextureParams = this.roadParamsTexture();
-    return new Road(roadTextureParams).get();
+    return new Road(this.camera, roadTextureParams);
   }
   //#endregion
 
@@ -131,5 +143,6 @@ export class Desert extends BaseScene {
 
   public updateScene() {
     this.ground.trackCamera();
+    this.road.updateRoad();
   }
 }

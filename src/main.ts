@@ -21,6 +21,10 @@ const renderer = new WebGLRenderer({
   logarithmicDepthBuffer: true
 });
 
+camera.position.z = 5
+camera.position.x = 5;
+camera.position.y = 5;
+
 renderer.setSize(screenSizes.width, screenSizes.height)
 
 const desert = new Desert(camera);
@@ -31,16 +35,16 @@ controls.enableDamping = true;
 
 const axes = new AxesHelper(3);
 
-scene.add(desertScene,aLight, light, axes );
+scene.add(desertScene,aLight, light, axes);
 
 
 document.body.appendChild(renderer.domElement);
 handleResize();
 
 function animate(time: number) {
-  animateCamera(time);
+  // animateCamera(time);
   controls.update();
-  desert.updateScene();
+  // desert.updateScene();
   renderer.render(scene, camera);
   requestAnimationFrame(animate);
 }
@@ -65,25 +69,22 @@ function handleResize() {
 function animateCamera(time: number) {
   const ringInnerRadius = 550;
   const ringOuterRadius = 600;
-  const ringCenterRadius = (ringInnerRadius + ringOuterRadius) / 2; // 🔹 Centro della strada
-  const cameraDistanceFromRing = -20; // 🔹 La camera è dentro la strada
-  const lookAheadOffset = .5; // 🔹 Offset NEGATIVO per invertire la direzione dello sguardo
-  const speed = -0.00005; // 🔥 Invertiamo la direzione della rotazione
+  const ringCenterRadius = (ringInnerRadius + ringOuterRadius) / 2;
+  const cameraDistanceFromRing = -20;
+  const lookAheadOffset = .5;
+  const speed = -0.00005;
 
-  const angle = time * speed; // 🔹 Angolo attuale basato sul tempo
+  const angle = time * speed;
 
-  // 🔹 Posizione della camera (orbita più piccola della strada)
   const camX = (ringCenterRadius + cameraDistanceFromRing) * Math.cos(angle);
   const camZ = (ringCenterRadius + cameraDistanceFromRing) * Math.sin(angle);
-  const camY = 6; // 🔹 Altezza regolata per una visuale migliore
+  const camY = 6;
 
-  // 🔥 🔹 Punto da guardare → Avanti nella direzione inversa
   const lookX = (ringCenterRadius + cameraDistanceFromRing) * Math.cos(angle + lookAheadOffset);
   const lookZ = (ringCenterRadius + cameraDistanceFromRing) * Math.sin(angle + lookAheadOffset);
-  const lookY = camY - 5; // 🔹 Guardiamo leggermente verso il basso
+  const lookY = camY - 5;
 
-  // 🔥 Imposta la posizione e la direzione della camera
   camera.position.set(camX, camY, camZ);
-  camera.lookAt(lookX, lookY, lookZ); // 🔥 Ora la camera guarda avanti nella direzione giusta
+  camera.lookAt(lookX, lookY, lookZ);
 }
 
