@@ -10,6 +10,7 @@ export default defineConfig({
     alias: {
       "@enums": path.resolve(__dirname, "src/enums"),
       "@scenes": path.resolve(__dirname, "src/scenes"),
+      "@globalUtils": path.resolve(__dirname, "src/globalUtils"),
     },
   },
 });
