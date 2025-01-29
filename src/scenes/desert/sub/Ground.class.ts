@@ -1,6 +1,9 @@
-import { TextureMaps } from "@interfaces/img-texture.interface";
 import { createNoise2D } from "simplex-noise";
 import { Group, PlaneGeometry, Mesh, MeshStandardMaterial, Vector3, PerspectiveCamera, RepeatWrapping } from "three";
+import { ObjectSpawner } from "../ObjectSpawner.class";
+import { GLTFLoader } from "three/examples/jsm/Addons.js";
+import { TextureMaps } from "@interfaces/img-texture.interface";
+import { RoadParams } from "@globalUtils/roadParams";
 
 export class Ground {
   private groundGroup = new Group();
@@ -9,42 +12,69 @@ export class Ground {
   private chunkMap = new Map();
   private currentChunk = { x: 0, z: 0 };
   private camera;
+  private objectSpawner: ObjectSpawner;
+  private heightMap = new Map<string, number>();
 
   private noise = createNoise2D();
 
   private textures: TextureMaps;
 
-  constructor(camera: PerspectiveCamera, allTextures: TextureMaps) {
+  constructor(camera: PerspectiveCamera, gltfLoader: GLTFLoader,allTextures: TextureMaps) {
     this.camera = camera;
     this.textures = allTextures;
+
+    this.objectSpawner = new ObjectSpawner(camera, this.groundGroup, this.chunkSize, this.renderDistance);
+    this.load3Dobjs(gltfLoader);
     this.generateChunks(this.currentChunk.x, this.currentChunk.z);
+  }
+
+  private load3Dobjs(gltfLoader: GLTFLoader) {
+    const obj3DDracoPath = import.meta.env.BASE_URL + 'objs3D/desert/' + 'objsDesert.glb';
+    gltfLoader.load(obj3DDracoPath, (gltf) => {
+      const skull = gltf.scene.getObjectByName('skull');
+      const vulture = gltf.scene.getObjectByName('vulture');
+      const cactus = gltf.scene.getObjectByName('cactus');
+      const bush = gltf.scene.getObjectByName('bush');
+
+      
+      if(cactus && bush && vulture && skull) {
+        cactus.scale.set(6,6,6);
+        bush.scale.set(.03,.03,.03);
+        vulture.scale.set(.22,.22,.22);
+        skull.scale.set(2.8,2.8,2.8);
+
+        skull.position.setY(-3.5);
+
+        this.objectSpawner.setObjects([cactus, bush], [vulture, skull]);
+      }
+    });
   }
 
   private setLookCameraOnStreet(cameraPosition: Vector3) {
     const roadCenter = new Vector3(0, 0, 0);
     const toCenter = cameraPosition.clone().sub(roadCenter); // vector camera → center
     toCenter.setY(0);
-    toCenter.normalize().multiplyScalar(600);
+    toCenter.normalize().multiplyScalar(RoadParams.roadRadius);
 
     const closestRoadPoint = roadCenter.clone().add(toCenter);
-    const cameraDirection = new Vector3();
-    this.camera.getWorldDirection(cameraDirection);
+    // const cameraDirection = new Vector3();
+    // this.camera.getWorldDirection(cameraDirection);
     
     // OFFSET to look to right
-    const rightVector = new Vector3(-cameraDirection.z, 0, cameraDirection.x).normalize();
+    // const rightVector = new Vector3(-cameraDirection.z, 0, cameraDirection.x).normalize();
 
-    const lookAtOffset = 1;
-    const lookAtTarget = closestRoadPoint.clone().add(rightVector.multiplyScalar(lookAtOffset));
+    // const lookAtOffset = .5;
+    // const lookAtTarget = closestRoadPoint.clone().add(rightVector.multiplyScalar(lookAtOffset));
 
-    const cameraOffset = 5;
-    const newCameraPosition = cameraPosition.clone().add(rightVector.multiplyScalar(cameraOffset));
-    this.camera.position.copy(newCameraPosition);
+    // const cameraOffset = 5;
+    // const newCameraPosition = cameraPosition.clone().add(rightVector.multiplyScalar(cameraOffset));
+    // this.camera.position.copy(newCameraPosition);
 
-    const currentLookAt = new Vector3();
+    const currentLookAt = new Vector3(-3,-3,-3);
     this.camera.getWorldDirection(currentLookAt);
     currentLookAt.add(cameraPosition);
     
-    currentLookAt.lerp(lookAtTarget, 0.1);
+    // currentLookAt.lerp(lookAtTarget, 0.1);
     this.camera.lookAt(currentLookAt);
   }
 
@@ -60,22 +90,32 @@ export class Ground {
       let z = position.getZ(i) + chunkZ;
 
       const distanceFromCenter = Math.sqrt(x * x + z * z);
-      const isInRoad = distanceFromCenter >= roadRadius - roadWidth / 2 && 
+      const isInRoad = distanceFromCenter >= roadRadius - roadWidth / 2 &&
         distanceFromCenter <= roadRadius + roadWidth / 2;
 
-      if (isInRoad) {
-        position.setY(i, 0);
-      } else {
-        const noise = this.noise(x * frequency, z * frequency) * amplitude;
-        position.setY(i, noise);
+      let y = 0;
+      if (!isInRoad) {
+        y = this.noise(x * frequency, z * frequency) * amplitude;
       }
+      position.setY(i, y);
+
+      this.heightMap.set(`${Math.floor(x)},${Math.floor(z)}`, y);
     }
 
     position.needsUpdate = true;
     geometry.computeVertexNormals();
+
+    this.objectSpawner?.updateHeightMap(this.heightMap);
   }
 
+
   //#region Chunks
+  private calculateLOD(distance: number): number {
+    if (distance < this.chunkSize * 2) return 0;
+    if (distance < this.chunkSize * 4) return 1;
+    return 2;
+  }
+
   private generateChunks(centerX: number, centerZ: number) {
     const newChunkKeys = new Set();
 
@@ -100,15 +140,19 @@ export class Ground {
     }
   }
 
-  private createChunk(x: number, z: number, LOD = 1) {
-    const segments = Math.max(Math.floor(this.chunkSize * .5 **LOD), 1);
+  private createChunk(x: number, z: number) {
+    const distance = new Vector3(x, 0, z).distanceTo(this.camera.position);
+    const LOD = this.calculateLOD(distance);
+    const segments = Math.max(Math.floor(this.chunkSize * 0.5 ** LOD), 1);
+
     const geometry = new PlaneGeometry(this.chunkSize, this.chunkSize, segments, segments);
     geometry.rotateX(-Math.PI / 2);
-    this.applySandWaves(geometry, x,z)
+    this.applySandWaves(geometry, x, z);
 
     this.textures.map.wrapS = RepeatWrapping;
     this.textures.map.wrapT = RepeatWrapping;
-    this.textures.map.repeat.set(1,1);
+    this.textures.map.repeat.set(1, 1);
+
     const material = new MeshStandardMaterial({
       ...this.textures,
       displacementScale: .3,
@@ -119,6 +163,8 @@ export class Ground {
     mesh.position.set(x, 0, z);
     this.groundGroup.add(mesh);
     this.chunkMap.set(`${x},${z}`, mesh);
+
+    this.objectSpawner?.spawnObjectsInChunk(x, z);
   }
 
   private removeChunk(key: string) {
@@ -141,11 +187,13 @@ export class Ground {
     const newChunkZ = Math.floor(cameraPosition.z / this.chunkSize);
 
     if (newChunkX !== this.currentChunk.x || newChunkZ !== this.currentChunk.z) {
-        this.currentChunk = { x: newChunkX, z: newChunkZ };
-        this.generateChunks(newChunkX, newChunkZ); // 🔥 Rigenera i chunk se necessario
+      this.currentChunk = { x: newChunkX, z: newChunkZ };
+      this.generateChunks(newChunkX, newChunkZ);
     }
 
     this.setLookCameraOnStreet(cameraPosition);
+
+    this.objectSpawner.removeObjectsOutOfView();
   };
 
   public get() {

@@ -21,16 +21,7 @@ export class Desert extends BaseScene {
   
   constructor(camera: PerspectiveCamera) {
     super();
-    // const obj3DPath = import.meta.env.BASE_URL + 'obj3D/' + 'cactus.glb';
-    const obj3DPath = import.meta.env.BASE_URL + 'obj3D/' + 'realistic.glb';
-    const obj3DDracoPath = import.meta.env.BASE_URL + 'obj3D/' + 'cactus-v1.glb';
-    this.gltf.load(obj3DPath, (gltf) => {
-      gltf.scene.scale.set(10,10,10)
-      this.cactus = gltf;
-      this.desertGroup.add(this.cactus.scene)
-    });
     
-
     this.camera = camera;
     
     const mountains = this.createMountains();
@@ -129,7 +120,7 @@ export class Desert extends BaseScene {
   
   private createGround() {
     const groundTextureParams = this.groundParamsTexture();
-    return new Ground(this.camera, groundTextureParams);
+    return new Ground(this.camera, this.gltfLoader, groundTextureParams);
   }
   //#endregion
 

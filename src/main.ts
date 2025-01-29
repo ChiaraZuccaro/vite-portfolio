@@ -3,6 +3,7 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { Desert } from './scenes/desert/Desert.class';
 
 import './style.css';
+import { RoadParams } from '@globalUtils/roadParams';
 
 const screenSizes = {
   width: window.innerWidth,
@@ -44,7 +45,7 @@ handleResize();
 function animate(time: number) {
   // animateCamera(time);
   controls.update();
-  // desert.updateScene();
+  desert.updateScene();
   renderer.render(scene, camera);
   requestAnimationFrame(animate);
 }
@@ -67,21 +68,20 @@ function handleResize() {
 }
 
 function animateCamera(time: number) {
-  const ringInnerRadius = 550;
-  const ringOuterRadius = 600;
+  const ringInnerRadius = RoadParams.roadRadius - RoadParams.roadWidth;
+  const ringOuterRadius = RoadParams.roadRadius;
   const ringCenterRadius = (ringInnerRadius + ringOuterRadius) / 2;
   const cameraDistanceFromRing = -20;
-  const lookAheadOffset = .5;
-  const speed = -0.00005;
+  const speed = -0.00007;
 
   const angle = time * speed;
 
   const camX = (ringCenterRadius + cameraDistanceFromRing) * Math.cos(angle);
   const camZ = (ringCenterRadius + cameraDistanceFromRing) * Math.sin(angle);
-  const camY = 6;
+  const camY = 20;
 
-  const lookX = (ringCenterRadius + cameraDistanceFromRing) * Math.cos(angle + lookAheadOffset);
-  const lookZ = (ringCenterRadius + cameraDistanceFromRing) * Math.sin(angle + lookAheadOffset);
+  const lookX = (ringCenterRadius + cameraDistanceFromRing) * Math.cos(angle);
+  const lookZ = (ringCenterRadius + cameraDistanceFromRing) * Math.sin(angle);
   const lookY = camY - 5;
 
   camera.position.set(camX, camY, camZ);
