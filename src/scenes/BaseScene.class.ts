@@ -6,15 +6,15 @@ export class BaseScene {
   private loadingManager = new LoadingManager();
 
   public texturesLoader = new TextureLoader(this.loadingManager);
-  public gltf = new GLTFLoader();
-  public dracoLoader = new DRACOLoader();
+  public gltfLoader = new GLTFLoader(this.loadingManager);
+  public dracoLoader = new DRACOLoader(this.loadingManager);
 
   public textures: string[] = [];
   public group = new Group();
 
   constructor() {
     this.dracoLoader.setDecoderPath(import.meta.env.BASE_URL + 'draco/');
-    this.gltf.setDRACOLoader(this.dracoLoader);
+    this.gltfLoader.setDRACOLoader(this.dracoLoader);
 
     this.loadingProgress()
   }
