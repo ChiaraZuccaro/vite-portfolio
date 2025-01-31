@@ -8,21 +8,20 @@ import { RoadParams } from "@globalUtils/roadParams";
 export class Ground {
   private groundGroup = new Group();
   private chunkSize = 120;
-  private renderDistance = 2;
-  private chunkMap = new Map();
+  private renderDistance = 3;
+  private chunkMap = new Map<string, Mesh>();
   private currentChunk = { x: 0, z: 0 };
-  private camera;
-  private objectSpawner: ObjectSpawner;
   private heightMap = new Map<string, number>();
-
+  
   private noise = createNoise2D();
+  private camera;
+  private objectSpawner;
+  private textures;
 
-  private textures: TextureMaps;
 
-  constructor(camera: PerspectiveCamera, gltfLoader: GLTFLoader,allTextures: TextureMaps) {
+  constructor(camera: PerspectiveCamera, gltfLoader: GLTFLoader, allTextures: TextureMaps) {
     this.camera = camera;
     this.textures = allTextures;
-
     this.objectSpawner = new ObjectSpawner(camera, this.groundGroup, this.chunkSize, this.renderDistance);
     this.load3Dobjs(gltfLoader);
     this.generateChunks(this.currentChunk.x, this.currentChunk.z);
@@ -36,12 +35,12 @@ export class Ground {
       const cactus = gltf.scene.getObjectByName('cactus');
       const bush = gltf.scene.getObjectByName('bush');
 
-      
-      if(cactus && bush && vulture && skull) {
-        cactus.scale.set(6,6,6);
-        bush.scale.set(.03,.03,.03);
-        vulture.scale.set(.22,.22,.22);
-        skull.scale.set(2.8,2.8,2.8);
+
+      if (cactus && bush && vulture && skull) {
+        cactus.scale.set(6, 6, 6);
+        bush.scale.set(.03, .03, .03);
+        vulture.scale.set(.22, .22, .22);
+        skull.scale.set(2.8, 2.8, 2.8);
 
         skull.position.setY(-3.5);
 
@@ -59,7 +58,7 @@ export class Ground {
     const closestRoadPoint = roadCenter.clone().add(toCenter);
     // const cameraDirection = new Vector3();
     // this.camera.getWorldDirection(cameraDirection);
-    
+
     // OFFSET to look to right
     // const rightVector = new Vector3(-cameraDirection.z, 0, cameraDirection.x).normalize();
 
@@ -70,10 +69,10 @@ export class Ground {
     // const newCameraPosition = cameraPosition.clone().add(rightVector.multiplyScalar(cameraOffset));
     // this.camera.position.copy(newCameraPosition);
 
-    const currentLookAt = new Vector3(-3,-3,-3);
+    const currentLookAt = new Vector3(-3, -3, -3);
     this.camera.getWorldDirection(currentLookAt);
     currentLookAt.add(cameraPosition);
-    
+
     // currentLookAt.lerp(lookAtTarget, 0.1);
     this.camera.lookAt(currentLookAt);
   }
@@ -114,7 +113,51 @@ export class Ground {
     if (distance < this.chunkSize * 2) return 0;
     if (distance < this.chunkSize * 4) return 1;
     return 2;
+  }  
+
+  private createChunk(x: number, z: number, updateExisting = false) {
+    const cameraXZ = new Vector3(this.camera.position.x, 0, this.camera.position.z);
+    const chunkXZ = new Vector3(x, 0, z);
+    const distance = cameraXZ.distanceTo(chunkXZ);
+
+    const LOD = this.calculateLOD(distance);
+    const minSegments = 8;
+    const segments = Math.max(Math.floor(this.chunkSize * 0.5 ** LOD), minSegments);
+
+    const chunkKey = `${x},${z}`;
+
+    if (updateExisting && this.chunkMap.has(chunkKey)) {
+      const existingMesh = this.chunkMap.get(chunkKey);
+      if ((existingMesh?.geometry as PlaneGeometry).parameters.widthSegments !== segments) {
+        this.removeChunk(chunkKey);
+      } else {
+        return;
+      }
+    }
+
+    const geometry = new PlaneGeometry(this.chunkSize, this.chunkSize, segments, segments);
+    geometry.rotateX(-Math.PI / 2);
+    this.applySandWaves(geometry, x, z);
+
+    this.textures.map.wrapS = RepeatWrapping;
+    this.textures.map.wrapT = RepeatWrapping;
+    this.textures.map.repeat.set(1, 1);
+
+    const material = new MeshStandardMaterial({
+      ...this.textures,
+      displacementScale: 0.3,
+      roughness: 1,
+      wireframe: true // Cambiato per evitare artefatti
+    });
+
+    const mesh = new Mesh(geometry, material);
+    mesh.position.set(x, 0, z);
+    this.groundGroup.add(mesh);
+    this.chunkMap.set(chunkKey, mesh);
+
+    this.objectSpawner?.spawnObjectsInChunk(x, z);
   }
+
 
   private generateChunks(centerX: number, centerZ: number) {
     const newChunkKeys = new Set();
@@ -129,6 +172,8 @@ export class Ground {
 
         if (!this.chunkMap.has(chunkKey)) {
           this.createChunk(chunkX, chunkZ);
+        } else {
+          this.createChunk(chunkX, chunkZ, true);
         }
       }
     }
@@ -140,39 +185,16 @@ export class Ground {
     }
   }
 
-  private createChunk(x: number, z: number) {
-    const distance = new Vector3(x, 0, z).distanceTo(this.camera.position);
-    const LOD = this.calculateLOD(distance);
-    const segments = Math.max(Math.floor(this.chunkSize * 0.5 ** LOD), 1);
-
-    const geometry = new PlaneGeometry(this.chunkSize, this.chunkSize, segments, segments);
-    geometry.rotateX(-Math.PI / 2);
-    this.applySandWaves(geometry, x, z);
-
-    this.textures.map.wrapS = RepeatWrapping;
-    this.textures.map.wrapT = RepeatWrapping;
-    this.textures.map.repeat.set(1, 1);
-
-    const material = new MeshStandardMaterial({
-      ...this.textures,
-      displacementScale: .3,
-      roughness: 1
-    });
-
-    const mesh = new Mesh(geometry, material);
-    mesh.position.set(x, 0, z);
-    this.groundGroup.add(mesh);
-    this.chunkMap.set(`${x},${z}`, mesh);
-
-    this.objectSpawner?.spawnObjectsInChunk(x, z);
-  }
-
   private removeChunk(key: string) {
     const mesh = this.chunkMap.get(key);
     if (mesh) {
       this.groundGroup.remove(mesh);
       mesh.geometry.dispose();
-      mesh.material.dispose();
+      if (Array.isArray(mesh.material)) {
+        mesh.material.forEach((mat) => mat.dispose());
+      } else {
+        mesh.material.dispose();
+      }
       this.chunkMap.delete(key);
     }
   }
@@ -191,9 +213,9 @@ export class Ground {
       this.generateChunks(newChunkX, newChunkZ);
     }
 
-    this.setLookCameraOnStreet(cameraPosition);
+    // this.setLookCameraOnStreet(cameraPosition);
 
-    this.objectSpawner.removeObjectsOutOfView();
+    this.objectSpawner?.removeObjectsOutOfView();
   };
 
   public get() {
