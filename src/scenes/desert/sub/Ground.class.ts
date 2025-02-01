@@ -1,9 +1,7 @@
 import { createNoise2D } from "simplex-noise";
 import { Group, PlaneGeometry, Mesh, MeshStandardMaterial, Vector3, PerspectiveCamera, RepeatWrapping } from "three";
-import { ObjectSpawner } from "../ObjectSpawner.class";
 import { GLTFLoader } from "three/examples/jsm/Addons.js";
 import { TextureMaps } from "@interfaces/img-texture.interface";
-import { RoadParams } from "@globalUtils/roadParams";
 
 export class Ground {
   private groundGroup = new Group();
@@ -15,67 +13,67 @@ export class Ground {
   
   private noise = createNoise2D();
   private camera;
-  private objectSpawner;
+  // private objectSpawner;
   private textures;
 
 
   constructor(camera: PerspectiveCamera, gltfLoader: GLTFLoader, allTextures: TextureMaps) {
     this.camera = camera;
     this.textures = allTextures;
-    this.objectSpawner = new ObjectSpawner(camera, this.groundGroup, this.chunkSize, this.renderDistance);
-    this.load3Dobjs(gltfLoader);
     this.generateChunks(this.currentChunk.x, this.currentChunk.z);
+    // this.objectSpawner = new ObjectSpawner(camera, this.groundGroup, this.chunkSize, this.renderDistance);
+    // this.load3Dobjs(gltfLoader);
   }
 
-  private load3Dobjs(gltfLoader: GLTFLoader) {
-    const obj3DDracoPath = import.meta.env.BASE_URL + 'objs3D/desert/' + 'objsDesert.glb';
-    gltfLoader.load(obj3DDracoPath, (gltf) => {
-      const skull = gltf.scene.getObjectByName('skull');
-      const vulture = gltf.scene.getObjectByName('vulture');
-      const cactus = gltf.scene.getObjectByName('cactus');
-      const bush = gltf.scene.getObjectByName('bush');
+  // private load3Dobjs(gltfLoader: GLTFLoader) {
+  //   const obj3DDracoPath = import.meta.env.BASE_URL + 'objs3D/desert/' + 'objsDesert.glb';
+  //   gltfLoader.load(obj3DDracoPath, (gltf) => {
+  //     const skull = gltf.scene.getObjectByName('skull');
+  //     const vulture = gltf.scene.getObjectByName('vulture');
+  //     const cactus = gltf.scene.getObjectByName('cactus');
+  //     const bush = gltf.scene.getObjectByName('bush');
 
 
-      if (cactus && bush && vulture && skull) {
-        cactus.scale.set(6, 6, 6);
-        bush.scale.set(.03, .03, .03);
-        vulture.scale.set(.22, .22, .22);
-        skull.scale.set(2.8, 2.8, 2.8);
+  //     if (cactus && bush && vulture && skull) {
+  //       cactus.scale.set(6, 6, 6);
+  //       bush.scale.set(.03, .03, .03);
+  //       vulture.scale.set(.22, .22, .22);
+  //       skull.scale.set(2.8, 2.8, 2.8);
 
-        skull.position.setY(-3.5);
+  //       skull.position.setY(-3.5);
 
-        this.objectSpawner.setObjects([cactus, bush], [vulture, skull]);
-      }
-    });
-  }
+  //       this.objectSpawner.setObjects([cactus, bush], [vulture, skull]);
+  //     }
+  //   });
+  // }
 
-  private setLookCameraOnStreet(cameraPosition: Vector3) {
-    const roadCenter = new Vector3(0, 0, 0);
-    const toCenter = cameraPosition.clone().sub(roadCenter); // vector camera → center
-    toCenter.setY(0);
-    toCenter.normalize().multiplyScalar(RoadParams.roadRadius);
+  // private setLookCameraOnStreet(cameraPosition: Vector3) {
+  //   const roadCenter = new Vector3(0, 0, 0);
+  //   const toCenter = cameraPosition.clone().sub(roadCenter); // vector camera → center
+  //   toCenter.setY(0);
+  //   toCenter.normalize().multiplyScalar(RoadParams.roadRadius);
 
-    const closestRoadPoint = roadCenter.clone().add(toCenter);
-    // const cameraDirection = new Vector3();
-    // this.camera.getWorldDirection(cameraDirection);
+  //   const closestRoadPoint = roadCenter.clone().add(toCenter);
+  //   // const cameraDirection = new Vector3();
+  //   // this.camera.getWorldDirection(cameraDirection);
 
-    // OFFSET to look to right
-    // const rightVector = new Vector3(-cameraDirection.z, 0, cameraDirection.x).normalize();
+  //   // OFFSET to look to right
+  //   // const rightVector = new Vector3(-cameraDirection.z, 0, cameraDirection.x).normalize();
 
-    // const lookAtOffset = .5;
-    // const lookAtTarget = closestRoadPoint.clone().add(rightVector.multiplyScalar(lookAtOffset));
+  //   // const lookAtOffset = .5;
+  //   // const lookAtTarget = closestRoadPoint.clone().add(rightVector.multiplyScalar(lookAtOffset));
 
-    // const cameraOffset = 5;
-    // const newCameraPosition = cameraPosition.clone().add(rightVector.multiplyScalar(cameraOffset));
-    // this.camera.position.copy(newCameraPosition);
+  //   // const cameraOffset = 5;
+  //   // const newCameraPosition = cameraPosition.clone().add(rightVector.multiplyScalar(cameraOffset));
+  //   // this.camera.position.copy(newCameraPosition);
 
-    const currentLookAt = new Vector3(-3, -3, -3);
-    this.camera.getWorldDirection(currentLookAt);
-    currentLookAt.add(cameraPosition);
+  //   const currentLookAt = new Vector3(-3, -3, -3);
+  //   this.camera.getWorldDirection(currentLookAt);
+  //   currentLookAt.add(cameraPosition);
 
-    // currentLookAt.lerp(lookAtTarget, 0.1);
-    this.camera.lookAt(currentLookAt);
-  }
+  //   // currentLookAt.lerp(lookAtTarget, 0.1);
+  //   this.camera.lookAt(currentLookAt);
+  // }
 
   private applySandWaves(geometry: PlaneGeometry, chunkX: number, chunkZ: number) {
     const position = geometry.attributes.position;
@@ -104,7 +102,7 @@ export class Ground {
     position.needsUpdate = true;
     geometry.computeVertexNormals();
 
-    this.objectSpawner?.updateHeightMap(this.heightMap);
+    // this.objectSpawner?.updateHeightMap(this.heightMap);
   }
 
 
@@ -155,7 +153,7 @@ export class Ground {
     this.groundGroup.add(mesh);
     this.chunkMap.set(chunkKey, mesh);
 
-    this.objectSpawner?.spawnObjectsInChunk(x, z);
+    // this.objectSpawner?.spawnObjectsInChunk(x, z);
   }
 
 
@@ -214,8 +212,7 @@ export class Ground {
     }
 
     // this.setLookCameraOnStreet(cameraPosition);
-
-    this.objectSpawner?.removeObjectsOutOfView();
+    // this.objectSpawner?.removeObjectsOutOfView();
   };
 
   public get() {
