@@ -9,8 +9,8 @@ export class Ground {
   private renderDistance = 3;
   private chunkMap = new Map<string, Mesh>();
   private currentChunk = { x: 0, z: 0 };
-  private heightMap = new Map<string, number>();
-  
+  // private heightMap = new Map<string, number>();
+
   private noise = createNoise2D();
   private camera;
   // private objectSpawner;
@@ -96,7 +96,7 @@ export class Ground {
       }
       position.setY(i, y);
 
-      this.heightMap.set(`${Math.floor(x)},${Math.floor(z)}`, y);
+      // this.heightMap.set(`${Math.floor(x)},${Math.floor(z)}`, y);
     }
 
     position.needsUpdate = true;
@@ -111,7 +111,22 @@ export class Ground {
     if (distance < this.chunkSize * 2) return 0;
     if (distance < this.chunkSize * 4) return 1;
     return 2;
-  }  
+  }
+
+  private shouldUpdateChunk(chunkKey: string): boolean {
+    const existingMesh = this.chunkMap.get(chunkKey);
+    if (!existingMesh) return true;
+    const [ x, z ] = chunkKey.split(",");
+    const cameraXZ = new Vector3(this.camera.position.x, 0, this.camera.position.z);
+    const chunkXZ = new Vector3(parseFloat(x), 0, parseFloat(z));
+    const distance = cameraXZ.distanceTo(chunkXZ);
+
+    const newLOD = this.calculateLOD(distance);
+    const currentSegments = (existingMesh.geometry as PlaneGeometry).parameters.widthSegments;
+    const newSegments = Math.max(Math.floor(this.chunkSize * 0.5 ** newLOD), 8);
+
+    return currentSegments !== newSegments;
+  }
 
   private createChunk(x: number, z: number, updateExisting = false) {
     const cameraXZ = new Vector3(this.camera.position.x, 0, this.camera.position.z);
@@ -124,15 +139,6 @@ export class Ground {
 
     const chunkKey = `${x},${z}`;
 
-    if (updateExisting && this.chunkMap.has(chunkKey)) {
-      const existingMesh = this.chunkMap.get(chunkKey);
-      if ((existingMesh?.geometry as PlaneGeometry).parameters.widthSegments !== segments) {
-        this.removeChunk(chunkKey);
-      } else {
-        return;
-      }
-    }
-
     const geometry = new PlaneGeometry(this.chunkSize, this.chunkSize, segments, segments);
     geometry.rotateX(-Math.PI / 2);
     this.applySandWaves(geometry, x, z);
@@ -142,10 +148,10 @@ export class Ground {
     this.textures.map.repeat.set(1, 1);
 
     const material = new MeshStandardMaterial({
-      ...this.textures,
+      // ...this.textures,
       displacementScale: 0.3,
       roughness: 1,
-      wireframe: true // Cambiato per evitare artefatti
+      wireframe: true
     });
 
     const mesh = new Mesh(geometry, material);
@@ -154,33 +160,6 @@ export class Ground {
     this.chunkMap.set(chunkKey, mesh);
 
     // this.objectSpawner?.spawnObjectsInChunk(x, z);
-  }
-
-
-  private generateChunks(centerX: number, centerZ: number) {
-    const newChunkKeys = new Set();
-
-    for (let dx = -this.renderDistance; dx <= this.renderDistance; dx++) {
-      for (let dz = -this.renderDistance; dz <= this.renderDistance; dz++) {
-        const chunkX = (centerX + dx) * this.chunkSize;
-        const chunkZ = (centerZ + dz) * this.chunkSize;
-        const chunkKey = `${chunkX},${chunkZ}`;
-
-        newChunkKeys.add(chunkKey);
-
-        if (!this.chunkMap.has(chunkKey)) {
-          this.createChunk(chunkX, chunkZ);
-        } else {
-          this.createChunk(chunkX, chunkZ, true);
-        }
-      }
-    }
-    // Remove chunk far
-    for (const key of this.chunkMap.keys()) {
-      if (!newChunkKeys.has(key)) {
-        this.removeChunk(key);
-      }
-    }
   }
 
   private removeChunk(key: string) {
@@ -194,6 +173,31 @@ export class Ground {
         mesh.material.dispose();
       }
       this.chunkMap.delete(key);
+    }
+  }
+
+  private generateChunks(centerX: number, centerZ: number) {
+    const newChunkKeys = new Set<string>();
+
+    for (let dx = -this.renderDistance; dx <= this.renderDistance; dx++) {
+      for (let dz = -this.renderDistance; dz <= this.renderDistance; dz++) {
+        const chunkX = (centerX + dx) * this.chunkSize;
+        const chunkZ = (centerZ + dz) * this.chunkSize;
+        const chunkKey = `${chunkX},${chunkZ}`;
+
+        newChunkKeys.add(chunkKey);
+
+        if (!this.chunkMap.has(chunkKey) || this.shouldUpdateChunk(chunkKey)) {
+          this.removeChunk(chunkKey);
+          this.createChunk(chunkX, chunkZ);
+        }
+      }
+    }
+    // Remove chunk far
+    for (const key of this.chunkMap.keys()) {
+      if (!newChunkKeys.has(key)) {
+        this.removeChunk(key);
+      }
     }
   }
   //#endregion
