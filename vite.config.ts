@@ -11,6 +11,7 @@ export default defineConfig({
       "@enums": path.resolve(__dirname, "src/enums"),
       "@scenes": path.resolve(__dirname, "src/scenes"),
       "@globalUtils": path.resolve(__dirname, "src/globalUtils"),
+      "@workers": path.resolve(__dirname, "src/workers"),
     },
   },
 });

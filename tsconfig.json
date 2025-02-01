@@ -1,9 +1,9 @@
 {
   "compilerOptions": {
-    "target": "ES2020",
+    "target": "ESNext",
     "useDefineForClassFields": true,
     "module": "ESNext",
-    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "lib": ["ES2020", "DOM", "DOM.Iterable", "WebWorker"],
 
     "strictPropertyInitialization": false,
 
@@ -18,7 +18,8 @@
       "@interfaces/*": ["src/interfaces/*"],
       "@enums/*": ["src/enums/*"],
       "@scenes/*": ["src/scenes/*"],
-      "@globalUtils/*": ["src/globalUtils/*"]
+      "@globalUtils/*": ["src/globalUtils/*"],
+      "@workers/*": ["src/workers/*"]
     },
     /* Linting */
     "strict": true,
