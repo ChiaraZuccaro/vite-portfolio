@@ -1,48 +1,12 @@
-import { Group, Object3D, Vector3, PerspectiveCamera, Mesh, MeshStandardMaterial } from "three";
+import { Object3D, Mesh, Vector3 } from "three";
 
 export class ObjectSpawner {
-  private sceneGroup: Group;
-  private camera: PerspectiveCamera;
-  private chunkSize: number;
-  private renderDistance: number;
-  private heightMap: Map<string, number>;
   private objectsPlaced = new Set<string>();
-
   private cactusList: Object3D[] = [];
   private rareObjects: Object3D[] = [];
 
-  constructor(camera: PerspectiveCamera, sceneGroup: Group, chunkSize: number, renderDistance: number) {
-    this.camera = camera;
-    this.sceneGroup = sceneGroup;
-    this.chunkSize = chunkSize;
-    this.renderDistance = renderDistance;
-    this.heightMap = new Map<string, number>();
-  }
-
-  private disposeObject(obj: Object3D) {
-    obj.traverse((child: Object3D) => {
-      if ((child as Mesh).isMesh) {
-        const mesh = child as Mesh;
-
-        if (mesh.geometry) {
-          mesh.geometry.dispose();
-        }
-        if (mesh.material) {
-          if (Array.isArray(mesh.material)) {
-              mesh.material.forEach(mat => mat.dispose());
-          } else {
-              mesh.material.dispose();
-          }
-        }
-        if (mesh.material && (mesh.material as MeshStandardMaterial).map) {
-          (mesh.material as MeshStandardMaterial).map!.dispose();
-        }
-      }
-    });
-  }
-  
-  public updateHeightMap(heightMap: Map<string, number>) {
-    this.heightMap = heightMap;
+  constructor() {
+    // Ora lo spawner è globale, ma genera oggetti per singoli chunk
   }
 
   public setObjects(cactus: Object3D[], rareObjects: Object3D[]) {
@@ -50,69 +14,40 @@ export class ObjectSpawner {
     this.rareObjects = rareObjects;
   }
 
-  public spawnObjectsInChunk(chunkX: number, chunkZ: number) {
+  public spawnObjectsInChunk(chunkX: number, chunkZ: number): Mesh[] {
     const numCactus = Math.floor(Math.random() * 2) + 1;
     const numRareObjects = Math.random() < 0.2 ? 1 : 0;
 
+    console.log(`🌵 Spawn di ${numCactus} cactus e ${numRareObjects} oggetti rari nel chunk (${chunkX}, ${chunkZ})`);
+
+    const spawnedObjects: Mesh[] = [];
+
     for (let i = 0; i < numCactus; i++) {
-      this.spawnObject(chunkX, chunkZ, this.cactusList);
+      const obj = this.spawnObject(chunkX, chunkZ, this.cactusList);
+      if (obj) spawnedObjects.push(obj);
     }
 
     for (let i = 0; i < numRareObjects; i++) {
-      this.spawnObject(chunkX, chunkZ, this.rareObjects);
+      const obj = this.spawnObject(chunkX, chunkZ, this.rareObjects);
+      if (obj) spawnedObjects.push(obj);
     }
+
+    return spawnedObjects;
   }
 
-  private spawnObject(chunkX: number, chunkZ: number, objectList: Object3D[]) {
-    if (objectList.length === 0) return;
+  private spawnObject(chunkX: number, chunkZ: number, objectList: Object3D[]): Mesh | null {
+    if (objectList.length === 0) return null;
 
-    let maxAttempts = 6;
-    for (let attempts = 0; attempts < maxAttempts; attempts++) {
-      let x = chunkX + (Math.random() - 0.5) * this.chunkSize;
-      let z = chunkZ + (Math.random() - 0.5) * this.chunkSize;
-      let key = `${Math.floor(x)},${Math.floor(z)}`;
+    let x = chunkX + (Math.random() - 0.5) * 10;
+    let z = chunkZ + (Math.random() - 0.5) * 10;
+    let key = `${Math.floor(x)},${Math.floor(z)}`;
 
-      if (this.objectsPlaced.has(key)) continue;
-      if (!this.heightMap.has(key)) continue;
+    if (this.objectsPlaced.has(key)) return null;
 
-      let y = this.heightMap.get(key)!;
-      const distanceFromCenter = Math.sqrt(x * x + z * z);
-      const roadRadius = 600;
-      const roadWidth = 55;
-      const isInRoad = distanceFromCenter >= roadRadius - roadWidth / 2 &&
-        distanceFromCenter <= roadRadius + roadWidth / 2;
+    let obj = objectList[Math.floor(Math.random() * objectList.length)].clone();
+    obj.position.set(x, 1, z);
+    this.objectsPlaced.add(key);
 
-      if (!isInRoad) {
-        let obj = objectList[Math.floor(Math.random() * objectList.length)].clone();
-        obj.position.set(x, y, z);
-        this.sceneGroup.add(obj);
-        this.objectsPlaced.add(key);        
-        return;
-      }
-    }
-  }
-
-
-  public removeObjectsOutOfView() {
-    const cameraPos = new Vector3();
-    this.camera.getWorldPosition(cameraPos);
-    const maxDistance = this.chunkSize * this.renderDistance * 1.5;
-    for (const key of this.objectsPlaced) {
-      let [x, z] = key.split(",").map(Number);
-      // console.log(this.sceneGroup);
-      console.log(key);
-      
-      let obj = this.sceneGroup.getObjectByName(key);
-      // console.log(obj);
-      
-      if (obj) {
-        const dist = cameraPos.distanceTo(obj.position);
-        if (dist > maxDistance) {
-          this.disposeObject(obj);
-          this.sceneGroup.remove(obj);
-          this.objectsPlaced.delete(key);
-        }
-      }
-    }
+    return obj as Mesh;
   }
 }
