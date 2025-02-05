@@ -4,6 +4,7 @@ import { GLTFLoader } from "three/examples/jsm/Addons.js";
 import { TextureMaps } from "@interfaces/img-texture.interface";
 import { ObjectSpawner } from "../ObjectSpawner.class";
 import { Chunk } from "@scenes/Chunk.class";
+import { RoadParams } from "@globalUtils/roadParams";
 
 export class Ground {
   private groundGroup = new Group();
@@ -43,7 +44,7 @@ export class Ground {
           vulture.scale.set(.22, .22, .22);
           skull.scale.set(2.8, 2.8, 2.8);
 
-          skull.position.setY(-3.5);
+          skull.position.setY(-5);
 
           this.objectSpawner.setObjects([cactus, bush], [vulture, skull]);
         } else {
@@ -139,13 +140,12 @@ export class Ground {
     return currentSegments !== newSegments;
   }
 
-  private createChunk(x: number, z: number, updateExisting = false) {
+  private createChunk(x: number, z: number, shouldSpawnObjects: boolean) {
     const cameraXZ = new Vector3(this.camera.position.x, 0, this.camera.position.z);
     const chunkXZ = new Vector3(x, 0, z);
     const distance = cameraXZ.distanceTo(chunkXZ);
 
     const LOD = this.calculateLOD(distance);
-
     const chunkKey = `${x},${z}`;
 
     if (this.chunkMap.has(chunkKey)) {
@@ -156,15 +156,16 @@ export class Ground {
       this.chunkSize,
       this.noise,
       LOD,
-      new Vector3(x,0,z),
+      new Vector3(x, 0, z),
       this.objectSpawner,
-      this.textures
+      this.textures,
+      shouldSpawnObjects
     );
+
     this.groundGroup.add(newChunk);
     this.chunkMap.set(chunkKey, newChunk);
-
-    console.log(`🆕 Creato Chunk ${chunkKey} con ${newChunk.children.length} oggetti.`);
   }
+
 
   private removeChunk(key: string) {
     const chunk = this.chunkMap.get(key);
@@ -186,9 +187,16 @@ export class Ground {
 
         newChunkKeys.add(chunkKey);
 
+        const halfRoadWidth = RoadParams.roadWidth / 2;
+        const minSpawnDistance = RoadParams.roadRadius - halfRoadWidth - 5; // Un po' dentro la strada
+        const maxSpawnDistance = RoadParams.roadRadius + halfRoadWidth + 20; // Un po' fuori la strada
+        const chunkDistance = Math.sqrt(chunkX * chunkX + chunkZ * chunkZ);
+
+        const shouldSpawnObjects = (chunkDistance >= minSpawnDistance && chunkDistance <= maxSpawnDistance);
+
         if (!this.chunkMap.has(chunkKey) || this.shouldUpdateChunk(chunkKey)) {
           this.removeChunk(chunkKey);
-          this.createChunk(chunkX, chunkZ);
+          this.createChunk(chunkX, chunkZ, shouldSpawnObjects);
         }
       }
     }

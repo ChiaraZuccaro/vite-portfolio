@@ -5,7 +5,6 @@ import { TextureMaps } from "@interfaces/img-texture.interface";
 import { RoadParams } from "@globalUtils/roadParams";
 
 export class Chunk extends Mesh {
-  private treesPositionArray = []
   private objects: Mesh[] = [];
   private chunkKey: string;
   private size: number;
@@ -18,11 +17,12 @@ export class Chunk extends Mesh {
     private LOD = 0,
     private globalPosition = new Vector3(0, 0, 0),
     private objectSpawner: ObjectSpawner,
-    private textures: TextureMaps
+    private textures: TextureMaps,
+    private shouldSpawnObjects: boolean
   ) {
     // const density = isMobile ? 4 : 2
     const minSegments = 8;
-		const segments = Math.max(Math.floor(chunkSize * 0.5 ** LOD), minSegments)
+    const segments = Math.max(Math.floor(chunkSize * 0.5 ** LOD), minSegments)
     const geometry = new PlaneGeometry(chunkSize, chunkSize, segments, segments);
     geometry.rotateX(-Math.PI / 2);
 
@@ -40,10 +40,11 @@ export class Chunk extends Mesh {
     this.LOD = LOD;
 
     // this.chunkKey = `${x},${z}`;
-    // this.position.set(x, 0, z);
 
     this.applySandWaves();
-    // this.spawnObjects();
+    if(shouldSpawnObjects) {
+      this.spawnObjects();
+    }
   }
 
   private applySandWaves() {
@@ -59,7 +60,7 @@ export class Chunk extends Mesh {
 
       const distanceFromCenter = Math.sqrt(x * x + z * z);
       const isInRoad = distanceFromCenter >= RoadParams.roadRadius - halfRoadWidth
-      && distanceFromCenter <= RoadParams.roadRadius + halfRoadWidth;
+        && distanceFromCenter <= RoadParams.roadRadius + halfRoadWidth;
 
       let y = isInRoad ? 0 : this.globNoise(x * frequency, z * frequency) * amplitude;
 
@@ -71,9 +72,45 @@ export class Chunk extends Mesh {
   }
 
   private spawnObjects() {
-    this.objects = this.objectSpawner.spawnObjectsInChunk(this.position.x, this.position.z);
-    this.objects.forEach(obj => this.add(obj));
+    const maxObjects = 6;
+    const spawnedObjects: Mesh[] = [];
+
+    const halfRoadWidth = RoadParams.roadWidth / 2;
+    const minSpawnDistance = RoadParams.roadRadius + halfRoadWidth + 2; // Distanza minima dalla strada
+    const maxSpawnDistance = RoadParams.roadRadius + halfRoadWidth + 10; // Distanza massima dalla strada
+
+    for (let i = 0; i < maxObjects; i++) {
+      let attempts = 0;
+      let placed = false;
+
+      while (attempts < 10 && !placed) {
+        attempts++;
+
+        // Generiamo una posizione SOLO nell'anello attorno alla strada
+        const angle = Math.random() * Math.PI * 2;
+        const distance = Math.random() * (maxSpawnDistance - minSpawnDistance) + minSpawnDistance;
+        const x = this.position.x + Math.cos(angle) * distance;
+        const z = this.position.z + Math.sin(angle) * distance;
+
+        // Controllo altezza terreno per posizionare bene gli oggetti
+        const y = this.globNoise(x * 0.03, z * 0.03) * 4 + 0.5;
+
+        // Chiedi all'ObjectSpawner di creare un oggetto
+        const obj = this.objectSpawner.spawnRandomObject();
+        if (obj) {
+          obj.position.set(x, y, z);
+          this.add(obj);
+          spawnedObjects.push(obj);
+          placed = true;
+          console.log(`✔️ Oggetto posizionato a (${x.toFixed(1)}, ${y.toFixed(1)}, ${z.toFixed(1)})`);
+        }
+      }
+    }
+
+    this.objects = spawnedObjects;
   }
+
+
 
   public removeChunk() {
     this.objects.forEach(obj => {
@@ -95,55 +132,7 @@ export class Chunk extends Mesh {
       this.material.dispose();
     }
 
-    console.log(`🗑️ Chunk ${this.chunkKey} eliminato.`);
+    this.objects = [];
+    console.log(`🗑️ Chunk ${this.chunkKey} eliminato con tutti gli oggetti.`);
   }
-
-  public getChunkKey(): string {
-    return this.chunkKey;
-  }
-
-  public updateLOD(LOD: number) {
-		// console.log('LOD updated', LOD, 'vs', this.LOD)
-		if (LOD === this.LOD) return
-
-		this.LOD = LOD
-		// const density = isMobile ? 4 : 2
-		const density = 2
-		const segments =
-			Math.max(Math.floor(this.size * 0.5 ** LOD), density) / density
-		const geometry = new PlaneGeometry(this.size, this.size, segments, segments)
-		geometry.rotateX(-Math.PI * 0.5)
-		// geometry.translate(this.size / 2, 0, this.size / 2)
-		// this.needsUpdate = true
-		this.geometry.dispose()
-		this.geometry = geometry
-		this.updateGeometry()
-		// this.geometry.needsUpdate = true
-	}
-
-  public updateGeometry() {
-		// this.treesPositionArray = []
-		const posAttr = this.geometry.getAttribute('position')
-		// const heightAttr = this.createHeightAttribute()
-
-		for (let i = 0; i < posAttr.count; i++) {
-			const x = posAttr.getX(i) + this.position.x
-			const z = posAttr.getZ(i) + this.position.z
-
-			// let h = getHeight(x, z, this.globNoise, this.params)
-
-			// heightAttr.setX(i, h)
-			// posAttr.setY(i, Math.max(h, -1))
-		}
-
-		posAttr.needsUpdate = true
-
-		// TODO calcolare a mano le normali con prodotto vettoriale
-		this.geometry.computeVertexNormals()
-
-		// this.createTreesMesh()
-		// if (!this.trees && this.LOD <= 2) this.generateTrees()
-		// if (!this.clouds) this.generateClouds()
-		// if (!this.boats) this.addBoats()
-	}
 }

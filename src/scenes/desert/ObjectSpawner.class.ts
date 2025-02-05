@@ -5,10 +5,6 @@ export class ObjectSpawner {
   private cactusList: Object3D[] = [];
   private rareObjects: Object3D[] = [];
 
-  constructor() {
-    // Ora lo spawner è globale, ma genera oggetti per singoli chunk
-  }
-
   public setObjects(cactus: Object3D[], rareObjects: Object3D[]) {
     this.cactusList = cactus;
     this.rareObjects = rareObjects;
@@ -33,6 +29,23 @@ export class ObjectSpawner {
     }
 
     return spawnedObjects;
+  }
+
+  public spawnRandomObject(): Mesh | null {
+    const rareObjectProbability = 0.1;
+    const rand = Math.random();
+
+    let objectList: Object3D[];
+    if (rand < rareObjectProbability) {
+      objectList = this.rareObjects;
+    } else {
+      objectList = this.cactusList;
+    }
+
+    if (objectList.length === 0) return null;
+
+    const obj = objectList[Math.floor(Math.random() * objectList.length)].clone();
+    return obj as Mesh;
   }
 
   private spawnObject(chunkX: number, chunkZ: number, objectList: Object3D[]): Mesh | null {
